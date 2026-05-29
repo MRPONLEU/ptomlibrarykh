@@ -874,10 +874,8 @@ export default function App() {
                         <div className="border-t border-white/10 pt-4 flex items-center justify-between mt-auto">
                           <motion.a
                             href={doc.downloadUrl}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              alert(`កំពុងទាញយក: ${doc.title}`);
-                            }}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             className="flex items-center gap-2 text-blue-500 hover:text-blue-400 transition-colors cursor-pointer text-[15px] font-bold"
