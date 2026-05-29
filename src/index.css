@@ -1,0 +1,13 @@
+@font-face {
+  font-family: 'KH-ABC-TEXT';
+  src: url('./assets/fonts/KH ABC TEXT 04.TTF') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Battambang", ui-sans-serif, system-ui, sans-serif;
+}

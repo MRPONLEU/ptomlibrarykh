@@ -1,0 +1,45 @@
+{
+  "entities": {
+    "DocumentItem": {
+      "title": "Document",
+      "description": "Document information including title, type, subType, download URL.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "coverUrl": { "type": "string" },
+        "fileSize": { "type": "string" },
+        "fileType": { "type": "string" },
+        "downloadUrl": { "type": "string" },
+        "uploadDate": { "type": "string" },
+        "downloads": { "type": "number" },
+        "type": { "type": "string" },
+        "subType": { "type": "string" }
+      },
+      "required": ["title", "coverUrl", "downloadUrl", "uploadDate"]
+    },
+    "CategoryItem": {
+      "title": "Category",
+      "description": "A category with optional subTypes.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "subTypes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["name", "subTypes"]
+    }
+  },
+  "firestore": {
+    "docs/{docId}": {
+      "schema": { "$ref": "#/entities/DocumentItem" },
+      "description": "A document item."
+    },
+    "categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/CategoryItem" },
+      "description": "A category item."
+    }
+  }
+}

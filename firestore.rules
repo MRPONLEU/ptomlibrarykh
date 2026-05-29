@@ -1,0 +1,50 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isAdmin() {
+      return request.auth != null && 
+        request.auth.token.email_verified == true && 
+        request.auth.token.email == 'broponleu998@gmail.com';
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidDoc(data) {
+      return data.title is string && data.title.size() <= 200 &&
+             data.coverUrl is string && data.coverUrl.size() <= 5000000 &&
+             data.downloadUrl is string && data.downloadUrl.size() <= 10000 &&
+             data.uploadDate is string && data.uploadDate.size() <= 100 &&
+             (!('description' in data.keys()) || (data.description is string && data.description.size() <= 5000)) &&
+             (!('fileSize' in data.keys()) || (data.fileSize is string && data.fileSize.size() <= 50)) &&
+             (!('fileType' in data.keys()) || (data.fileType is string && data.fileType.size() <= 50)) &&
+             (!('type' in data.keys()) || (data.type is string && data.type.size() <= 100)) &&
+             (!('subType' in data.keys()) || (data.subType is string && data.subType.size() <= 100)) &&
+             (!('downloads' in data.keys()) || (data.downloads is number));
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() <= 100 &&
+             data.subTypes is list && data.subTypes.size() <= 100;
+    }
+
+    match /docs/{docId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidDoc(incoming());
+      allow update: if isAdmin() && isValidDoc(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidCategory(incoming());
+      allow update: if isAdmin() && isValidCategory(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}
