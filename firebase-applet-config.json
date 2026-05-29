@@ -1,10 +1,10 @@
 {
-  "projectId": "brilliant-grammar-6fcwp",
-  "appId": "1:22264405701:web:124efd0708a6e2ed6e5aac",
-  "apiKey": "AIzaSyBWflPWoaiyLlSfdhPz3s3V1Y_0aXo6XD0",
-  "authDomain": "brilliant-grammar-6fcwp.firebaseapp.com",
+  "projectId": "gen-lang-client-0876339118",
+  "appId": "1:488395372494:web:5a1c381bf1efee6ce7dd9f",
+  "apiKey": "AIzaSyBm3viSlMl6tUb20ODfnil8zrgw2DizyQc",
+  "authDomain": "gen-lang-client-0876339118.firebaseapp.com",
   "firestoreDatabaseId": "ai-studio-ae491383-6f9f-45a3-99f7-1164a9228088",
-  "storageBucket": "brilliant-grammar-6fcwp.firebasestorage.app",
-  "messagingSenderId": "22264405701",
+  "storageBucket": "gen-lang-client-0876339118.firebasestorage.app",
+  "messagingSenderId": "488395372494",
   "measurementId": ""
 }
