@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Download, File as FileIcon, Search, HardDriveDownload, Calendar, Plus, Edit2, Trash2, X, LayoutGrid, Settings, Menu, UploadCloud, ChevronDown, Folder, GripVertical, ArrowUp, ArrowDown, LogOut, LogIn, Filter, Check, Loader2, Book } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
+import { Download, File as FileIcon, Search, Eye, HardDriveDownload, Calendar, Plus, Edit2, Trash2, X, LayoutGrid, Settings, Menu, UploadCloud, ChevronDown, Folder, GripVertical, ArrowUp, ArrowDown, LogOut, LogIn, Filter, Check, Loader2, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DocumentItem } from './types';
 import { db, auth, signInWithGoogle, logout } from './firebase';
-import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, orderBy } from 'firebase/firestore';
+import { collection, onSnapshot, doc, addDoc, updateDoc, deleteDoc, query, orderBy, increment } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
 export default function App() {
@@ -141,13 +141,17 @@ export default function App() {
     }, 3000);
   };
 
-  const filteredDocs = docs.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter 
-      ? (doc.type === typeFilter.type && (!typeFilter.subType || doc.subType === typeFilter.subType))
-      : true;
-    return matchesSearch && matchesType;
-  });
+  const deferredSearchTerm = useDeferredValue(searchTerm);
+
+  const filteredDocs = useMemo(() => {
+    return docs.filter(doc => {
+      const matchesSearch = doc.title.toLowerCase().includes(deferredSearchTerm.toLowerCase());
+      const matchesType = typeFilter 
+        ? (doc.type === typeFilter.type && (!typeFilter.subType || doc.subType === typeFilter.subType))
+        : true;
+      return matchesSearch && matchesType;
+    });
+  }, [docs, deferredSearchTerm, typeFilter]);
 
   const groupedDocs = useMemo(() => {
     const groups: { [key: string]: typeof docs } = {};
@@ -239,6 +243,16 @@ export default function App() {
       showNotification('មានបញ្ហាពេលលុបទិន្នន័យ', 'error');
     }
     setDeleteConfirm({ isOpen: false, type: 'doc', id: '' });
+  };
+
+  const handleDownload = async (docObj: DocumentItem) => {
+    try {
+      await updateDoc(doc(db, 'docs', docObj.id), {
+        downloads: increment(1)
+      });
+    } catch (e) {
+      console.error("Error incrementing downloads:", e);
+    }
   };
 
   const handleCategorySubmit = async (e: React.FormEvent) => {
@@ -657,14 +671,21 @@ export default function App() {
         {/* Dynamic Headings based on Tab */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 max-w-full">
           <div className="max-w-2xl">
-            <h2 className="text-4xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
-              {activeTab === 'view' ? (typeFilter ? (typeFilter.subType ? `${typeFilter.type} ${typeFilter.subType}` : `${typeFilter.type}`) : 'ឯកសារទាំងអស់') : (manageTab === 'docs' ? 'គ្រប់គ្រងឯកសារ' : 'ប្រភេទឯកសារ')}
-            </h2>
-            <p className="text-slate-400 text-lg">
-              {activeTab === 'view' 
-                ? 'ស្វែងរក និងទាញយកឯកសារដែលអ្នកត្រូវការពីប្រព័ន្ធនេះ។' 
-                : (manageTab === 'docs' ? 'បញ្ចូល កែប្រែ ឬលុបឯកសារចេញពីប្រព័ន្ធកណ្តាលរបស់អ្នក។' : 'បង្ហាញ ឬបង្កើតប្រភេទឯកសារថ្មីៗ និងប្រភេទរងរបស់វា។')}
-            </p>
+            {activeTab === 'manage' && (
+              <>
+                <h2 className="text-2xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
+                  {manageTab === 'docs' ? 'គ្រប់គ្រងឯកសារ' : 'ប្រភេទឯកសារ'}
+                </h2>
+                <p className="text-slate-400 text-base">
+                  {manageTab === 'docs' ? 'បញ្ចូល កែប្រែ ឬលុបឯកសារចេញពីប្រព័ន្ធកណ្តាលរបស់អ្នក។' : 'បង្ហាញ ឬបង្កើតប្រភេទឯកសារថ្មីៗ និងប្រភេទរងរបស់វា។'}
+                </p>
+              </>
+            )}
+            {activeTab === 'view' && typeFilter && (
+              <h2 className="text-2xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
+                {typeFilter.subType ? `${typeFilter.type} ${typeFilter.subType}` : typeFilter.type}
+              </h2>
+            )}
           </div>
           
           {activeTab === 'manage' && (
@@ -859,6 +880,7 @@ export default function App() {
                         <img
                           src={doc.coverUrl}
                           alt={doc.title}
+                          loading="lazy"
                           className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#161B22] via-transparent to-transparent opacity-60 z-10 pointer-events-none" />
@@ -866,13 +888,14 @@ export default function App() {
 
                       {/* Content */}
                       <div className="p-5 flex-1 flex flex-col relative z-20">
-                        <h3 className="text-lg font-bold text-white leading-tight mb-4 line-clamp-2" title={doc.title}>
+                        <h3 className="text-base font-bold text-white leading-[1.6] py-1 mb-3 line-clamp-2" title={doc.title}>
                           {doc.title}
                         </h3>
                         <div className="flex-1"></div>
                         
                         <div className="border-t border-white/10 pt-4 flex items-center justify-between mt-auto">
                           <motion.a
+                            onClick={() => handleDownload(doc)}
                             href={doc.downloadUrl}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -889,8 +912,9 @@ export default function App() {
                             <span>ទាញយក</span>
                           </motion.a>
 
-                          <div className="text-[13px] text-slate-400 font-medium tracking-wide">
-                            ទាញយក៖ <span className="text-blue-500 font-bold">{doc.downloads?.toLocaleString('km-KH') || 0}</span> ដង
+                          <div className="flex items-center gap-1.5 text-[13px] text-slate-400 font-medium tracking-wide" title="ចំនួនអ្នកទាញយក">
+                            <Eye size={14} />
+                            <span>{doc.downloads?.toLocaleString('km-KH') || 0}</span>
                           </div>
                         </div>
                       </div>
@@ -922,10 +946,10 @@ export default function App() {
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-lg bg-[#0A0C10] overflow-hidden shrink-0 relative border border-white/5">
-                            <img src={doc.coverUrl} alt="" className="w-full h-full object-cover" />
+                            <img src={doc.coverUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
                           </div>
                           <div>
-                            <div className="text-white font-bold text-sm mb-1 line-clamp-2">{doc.title}</div>
+                            <div className="text-white font-bold text-sm leading-[1.6] py-1 mb-1 line-clamp-2">{doc.title}</div>
                           </div>
                         </div>
                       </td>
@@ -938,8 +962,8 @@ export default function App() {
                         )}
                       </td>
                       <td className="p-4 text-sm text-slate-400 font-medium">
-                        <div className="flex items-center gap-1.5">
-                          <Download size={14} />
+                        <div className="flex items-center gap-1.5" title="ចំនួនអ្នកទាញយក">
+                          <Eye size={14} />
                           {doc.downloads?.toLocaleString('km-KH') || 0}
                         </div>
                       </td>
