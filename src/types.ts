@@ -10,4 +10,6 @@ export interface DocumentItem {
   downloads: number;
   type?: string;
   subType?: string;
+  isHidden?: boolean;
+  tags?: string[];
 }

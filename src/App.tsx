@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useDeferredValue } from 'react';
-import { Download, File as FileIcon, Search, Eye, HardDriveDownload, Calendar, Plus, Edit2, Trash2, X, LayoutGrid, Settings, Menu, UploadCloud, ChevronDown, Folder, GripVertical, ArrowUp, ArrowDown, LogOut, LogIn, Filter, Check, Loader2, Book } from 'lucide-react';
+import { Download, File as FileIcon, Search, Eye, EyeOff, HardDriveDownload, Calendar, Plus, Edit2, Trash2, X, LayoutGrid, Settings, Menu, UploadCloud, ChevronDown, Folder, GripVertical, ArrowUp, ArrowDown, LogOut, LogIn, Filter, Check, Loader2, Book } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { DocumentItem } from './types';
 import { db, auth, signInWithGoogle, logout } from './firebase';
@@ -125,6 +125,7 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDoc, setEditingDoc] = useState<DocumentItem | null>(null);
   const [formData, setFormData] = useState<Partial<DocumentItem>>({});
+  const [tagsInput, setTagsInput] = useState('');
 
   // Category Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -133,6 +134,8 @@ export default function App() {
   const [categoryFormData, setCategoryFormData] = useState<{name: string, subTypes: string}>({ name: '', subTypes: '' });
   
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+
+  const isAdminUser = currentUser && (currentUser.email === 'broponleu998@gmail.com' || currentUser.email === 'mrponleu20000@gmail.com');
 
   const showNotification = (message: string, type: 'success' | 'error' = 'success') => {
     setNotification({ message, type });
@@ -145,13 +148,16 @@ export default function App() {
 
   const filteredDocs = useMemo(() => {
     return docs.filter(doc => {
-      const matchesSearch = doc.title.toLowerCase().includes(deferredSearchTerm.toLowerCase());
+      if (activeTab === 'view' && doc.isHidden) return false;
+      const searchLower = deferredSearchTerm.toLowerCase();
+      const matchesSearch = doc.title.toLowerCase().includes(searchLower) || 
+                            (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(searchLower)));
       const matchesType = typeFilter 
         ? (doc.type === typeFilter.type && (!typeFilter.subType || doc.subType === typeFilter.subType))
         : true;
       return matchesSearch && matchesType;
     });
-  }, [docs, deferredSearchTerm, typeFilter]);
+  }, [docs, deferredSearchTerm, typeFilter, activeTab]);
 
   const groupedDocs = useMemo(() => {
     const groups: { [key: string]: typeof docs } = {};
@@ -176,18 +182,21 @@ export default function App() {
   // Form Handlers
   const openAddModal = () => {
     setEditingDoc(null);
+    setTagsInput('');
     setFormData({
       title: '', 
       coverUrl: 'https://images.unsplash.com/photo-1558021211-6d1403321394?w=500&auto=format&fit=crop&q=60', 
       downloadUrl: '#', 
       uploadDate: new Date().toISOString().split('T')[0],
-      downloads: 0
+      downloads: 0,
+      tags: []
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (doc: DocumentItem) => {
     setEditingDoc(doc);
+    setTagsInput(doc.tags ? doc.tags.join(', ') : '');
     setFormData(doc);
     setIsModalOpen(true);
   };
@@ -196,6 +205,16 @@ export default function App() {
 
   const handleDelete = (id: string) => {
     setDeleteConfirm({ isOpen: true, type: 'doc', id });
+  };
+
+  const handleToggleHide = async (docObj: DocumentItem) => {
+    try {
+      await updateDoc(doc(db, 'docs', docObj.id), {
+        isHidden: !docObj.isHidden
+      });
+    } catch(e) {
+      console.error("Error toggling hide:", e);
+    }
   };
 
   const openAddCategoryModal = () => {
@@ -290,10 +309,15 @@ export default function App() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const finalData = { 
+        ...formData, 
+        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean) 
+      };
+      
       if (editingDoc) {
-        await updateDoc(doc(db, 'docs', editingDoc.id), formData);
+        await updateDoc(doc(db, 'docs', editingDoc.id), finalData);
       } else {
-        await addDoc(collection(db, 'docs'), formData);
+        await addDoc(collection(db, 'docs'), finalData);
       }
       setIsModalOpen(false);
       showNotification('រក្សាទុកបានជោគជ័យ');
@@ -355,7 +379,7 @@ export default function App() {
             <LayoutGrid size={18}/> ឯកសារទាំងអស់
           </button>
           
-          {currentUser && (
+          {isAdminUser && (
             <div className="flex flex-col">
               <button
                 onClick={() => setIsManageExpanded(!isManageExpanded)}
@@ -944,7 +968,7 @@ export default function App() {
                 </thead>
                 <tbody>
                   {filteredDocs.map(doc => (
-                    <tr key={doc.id} className="border-b border-white/5 hover:bg-white/[0.02] transition">
+                    <tr key={doc.id} className={`border-b border-white/5 transition ${doc.isHidden ? 'bg-black/60 opacity-60 hover:bg-black/40' : 'hover:bg-white/[0.02]'}`}>
                       <td className="p-4 pl-6">
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-lg bg-[#0A0C10] overflow-hidden shrink-0 relative border border-white/5">
@@ -952,6 +976,13 @@ export default function App() {
                           </div>
                           <div>
                             <div className="text-white font-bold text-sm leading-[1.6] py-1 mb-1 line-clamp-2">{doc.title}</div>
+                            {doc.tags && doc.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {doc.tags.map((tag, idx) => (
+                                  <span key={idx} className="text-[10px] bg-blue-500/10 text-blue-400 font-medium px-2 py-0.5 rounded-md">{tag}</span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -971,6 +1002,13 @@ export default function App() {
                       </td>
                       <td className="p-4 pr-6 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleToggleHide(doc)} 
+                            className={`p-2 rounded-lg transition ${doc.isHidden ? 'text-blue-500 bg-blue-500/10' : 'text-slate-400 hover:text-blue-500 hover:bg-blue-500/10'}`}
+                            title={doc.isHidden ? "បង្ហាញឯកសារ" : "លាក់ឯកសារ"}
+                          >
+                            {doc.isHidden ? <EyeOff size={16}/> : <Eye size={16}/>}
+                          </button>
                           <button 
                             onClick={() => openEditModal(doc)} 
                             className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-500/10 rounded-lg transition"
@@ -1064,6 +1102,12 @@ export default function App() {
                          ))}
                       </select>
                     </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClasses}>Tags / ពាក្យគន្លឹះ</label>
+                    <input type="text" value={tagsInput} onChange={e => setTagsInput(e.target.value)} className={inputClasses} placeholder="គណិតវិទ្យា, ថ្នាក់ទី១, ..." />
+                    <p className="text-xs text-slate-500 mt-1">បំបែកពាក្យនីមួយៗដោយប្រើសញ្ញាក្បៀស (,)</p>
                   </div>
 
                   <div>
