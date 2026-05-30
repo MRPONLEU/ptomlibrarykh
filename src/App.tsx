@@ -377,13 +377,13 @@ export default function App() {
                     <div className="pl-9 pr-3 py-1 flex flex-col gap-1 border-l-2 border-white/10 ml-6 mt-1">
                       <button
                         onClick={() => { setActiveTab('manage'); setManageTab('docs'); setIsSidebarOpen(false); }}
-                        className={`text-left text-xs py-2 px-3 rounded-md transition-colors ${activeTab === 'manage' && manageTab === 'docs' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                        className={`text-left text-sm py-2 px-3 rounded-md transition-colors ${activeTab === 'manage' && manageTab === 'docs' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
                       >
                         គ្រប់គ្រងឯកសារ
                       </button>
                       <button
                         onClick={() => { setActiveTab('manage'); setManageTab('types'); setIsSidebarOpen(false); }}
-                        className={`text-left text-xs py-2 px-3 rounded-md transition-colors ${activeTab === 'manage' && manageTab === 'types' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
+                        className={`text-left text-sm py-2 px-3 rounded-md transition-colors ${activeTab === 'manage' && manageTab === 'types' ? 'bg-blue-600/20 text-blue-400 font-semibold' : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'}`}
                       >
                         ប្រភេទឯកសារ
                       </button>
@@ -669,39 +669,41 @@ export default function App() {
         <main className="flex-1 overflow-y-auto w-full px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         
         {/* Dynamic Headings based on Tab */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 max-w-full">
-          <div className="max-w-2xl">
-            {activeTab === 'manage' && (
-              <>
+        {(activeTab === 'manage' || (activeTab === 'view' && typeFilter)) && (
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 max-w-full">
+            <div className="max-w-2xl">
+              {activeTab === 'manage' && (
+                <>
+                  <h2 className="text-2xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
+                    {manageTab === 'docs' ? 'គ្រប់គ្រងឯកសារ' : 'ប្រភេទឯកសារ'}
+                  </h2>
+                  <p className="text-slate-400 text-base">
+                    {manageTab === 'docs' ? 'បញ្ចូល កែប្រែ ឬលុបឯកសារចេញពីប្រព័ន្ធកណ្តាលរបស់អ្នក។' : 'បង្ហាញ ឬបង្កើតប្រភេទឯកសារថ្មីៗ និងប្រភេទរងរបស់វា។'}
+                  </p>
+                </>
+              )}
+              {activeTab === 'view' && typeFilter && (
                 <h2 className="text-2xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
-                  {manageTab === 'docs' ? 'គ្រប់គ្រងឯកសារ' : 'ប្រភេទឯកសារ'}
+                  {typeFilter.subType ? `${typeFilter.type} ${typeFilter.subType}` : typeFilter.type}
                 </h2>
-                <p className="text-slate-400 text-base">
-                  {manageTab === 'docs' ? 'បញ្ចូល កែប្រែ ឬលុបឯកសារចេញពីប្រព័ន្ធកណ្តាលរបស់អ្នក។' : 'បង្ហាញ ឬបង្កើតប្រភេទឯកសារថ្មីៗ និងប្រភេទរងរបស់វា។'}
-                </p>
-              </>
-            )}
-            {activeTab === 'view' && typeFilter && (
-              <h2 className="text-2xl font-extrabold text-white mb-3 leading-tight uppercase tracking-tight">
-                {typeFilter.subType ? `${typeFilter.type} ${typeFilter.subType}` : typeFilter.type}
-              </h2>
-            )}
-          </div>
-          
-          {activeTab === 'manage' && (
-            <div className="flex gap-3 shrink-0">
-              {manageTab === 'docs' && (
-                <button
-                  onClick={openAddModal}
-                  className="px-5 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl sm:rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm whitespace-nowrap w-full sm:w-auto"
-                >
-                  <Plus size={18} />
-                  បញ្ចូលឯកសារថ្មី
-                </button>
               )}
             </div>
-          )}
-        </div>
+            
+            {activeTab === 'manage' && (
+              <div className="flex gap-3 shrink-0">
+                {manageTab === 'docs' && (
+                  <button
+                    onClick={openAddModal}
+                    className="px-5 py-3 sm:py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl sm:rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm whitespace-nowrap w-full sm:w-auto"
+                  >
+                    <Plus size={18} />
+                    បញ្ចូលឯកសារថ្មី
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-6">
           {activeTab === 'manage' && manageTab === 'types' ? (
